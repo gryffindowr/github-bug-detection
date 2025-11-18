@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { API_URL } from '../config'
 import './ProgressModal.css'
 
 const ProgressModal = ({ sessionId, onComplete, onError }) => {
@@ -10,7 +11,7 @@ const ProgressModal = ({ sessionId, onComplete, onError }) => {
     useEffect(() => {
         if (!sessionId) return
 
-        const eventSource = new EventSource(`http://localhost:8000/progress/${sessionId}`)
+        const eventSource = new EventSource(`${API_URL}/progress/${sessionId}`)
 
         eventSource.onmessage = (event) => {
             try {

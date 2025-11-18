@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FiGithub, FiShield, FiZap, FiTrendingUp } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
+import { API_URL } from '../config';
 import './LoginPage.css';
 
 const LoginPage = ({ onBack, onClassicView }) => {
@@ -36,7 +37,7 @@ const LoginPage = ({ onBack, onClassicView }) => {
         try {
             console.log('🔄 Processing OAuth callback with code:', code.substring(0, 10) + '...');
 
-            const response = await fetch(`http://localhost:8000/auth/callback?code=${code}`, {
+            const response = await fetch(`${API_URL}/auth/callback?code=${code}`, {
                 method: 'POST'
             });
 
@@ -80,7 +81,7 @@ const LoginPage = ({ onBack, onClassicView }) => {
     const handleGitHubLogin = async () => {
         try {
             setIsLoading(true);
-            const response = await fetch('http://localhost:8000/auth/github');
+            const response = await fetch(`${API_URL}/auth/github`);
 
             if (response.status === 503) {
                 toast.error('Enhanced features not installed. Using classic mode.');

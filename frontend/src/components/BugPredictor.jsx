@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_URL } from '../config'
 import './BugPredictor.css'
 import ProgressModal from './ProgressModal'
 
@@ -58,7 +59,7 @@ const BugPredictor = ({ onBackToDashboard }) => {
         setResult(null)
 
         try {
-            const response = await fetch('http://localhost:8000/analyze-github-url', {
+            const response = await fetch(`${API_URL}/analyze-github-url`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -90,7 +91,7 @@ const BugPredictor = ({ onBackToDashboard }) => {
     const analyzeWithGemini = async (code, filename) => {
         setGeminiLoading(true)
         try {
-            const response = await fetch('http://localhost:8000/analyze/gemini', {
+            const response = await fetch(`${API_URL}/analyze/gemini`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code, filename })
@@ -132,7 +133,7 @@ const BugPredictor = ({ onBackToDashboard }) => {
 
         try {
             const data = JSON.parse(repoData)
-            const response = await fetch('http://localhost:8000/predict', {
+            const response = await fetch(`${API_URL}/predict`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -161,7 +162,7 @@ const BugPredictor = ({ onBackToDashboard }) => {
             const formData = new FormData()
             formData.append('file', file)
 
-            const response = await fetch('http://localhost:8000/analyze-github-file', {
+            const response = await fetch(`${API_URL}/analyze-github-file`, {
                 method: 'POST',
                 body: formData
             })

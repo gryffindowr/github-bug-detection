@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiMapPin, FiBriefcase, FiCalendar } from 'react-icons/fi';
 import useAuthStore from '../store/authStore';
+import { API_URL } from '../config';
 import './UserProfile.css';
 
 const UserProfile = () => {
@@ -25,11 +26,11 @@ const UserProfile = () => {
             setLoading(true);
 
             // Fetch user profile
-            const profileResponse = await fetch(`http://localhost:8000/user/${user.id}`);
+            const profileResponse = await fetch(`${API_URL}/user/${user.id}`);
             const profileData = await profileResponse.json();
 
             // Fetch user stats
-            const statsResponse = await fetch(`http://localhost:8000/user/${user.id}/stats`);
+            const statsResponse = await fetch(`${API_URL}/user/${user.id}/stats`);
             const statsData = await statsResponse.json();
 
             setProfile(profileData);

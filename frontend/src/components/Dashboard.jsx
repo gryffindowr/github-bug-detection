@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiGithub, FiLogOut, FiTrendingUp, FiActivity, FiBarChart2 } from 'react-icons/fi';
 import useAuthStore from '../store/authStore';
+import { API_URL } from '../config';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import RepositoryList from './RepositoryList';
 import UserProfile from './UserProfile';
@@ -30,7 +31,7 @@ const Dashboard = ({ onClassicView }) => {
             }
 
             console.log('Fetching stats for user:', user.id);
-            const response = await fetch(`http://localhost:8000/user/${user.id}/stats`);
+            const response = await fetch(`${API_URL}/user/${user.id}/stats`);
 
             if (!response.ok) {
                 console.error('Stats fetch failed:', response.status, response.statusText);

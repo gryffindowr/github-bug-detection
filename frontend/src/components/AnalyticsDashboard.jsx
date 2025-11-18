@@ -3,6 +3,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { motion } from 'framer-motion';
 import { FiTrendingUp, FiActivity, FiAlertCircle } from 'react-icons/fi';
 import useAuthStore from '../store/authStore';
+import { API_URL } from '../config';
 import './AnalyticsDashboard.css';
 
 const AnalyticsDashboard = () => {
@@ -26,11 +27,11 @@ const AnalyticsDashboard = () => {
             setLoading(true);
 
             // Fetch user trends
-            const trendsResponse = await fetch(`http://localhost:8000/analytics/trends?user_id=${user.id}`);
+            const trendsResponse = await fetch(`${API_URL}/analytics/trends?user_id=${user.id}`);
             const trendsData = await trendsResponse.json();
 
             // Fetch user stats
-            const statsResponse = await fetch(`http://localhost:8000/user/${user.id}/stats`);
+            const statsResponse = await fetch(`${API_URL}/user/${user.id}/stats`);
             const statsData = await statsResponse.json();
 
             setTrends(trendsData);

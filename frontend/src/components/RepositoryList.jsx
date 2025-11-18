@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiGithub, FiStar, FiGitBranch, FiSearch, FiRefreshCw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
+import { API_URL } from '../config';
 import AnalysisResults from './AnalysisResults';
 import './RepositoryList.css';
 
@@ -21,7 +22,7 @@ const RepositoryList = ({ onAnalysisComplete }) => {
     const fetchRepositories = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8000/user/${user.id}/repositories?github_token=${githubToken}`);
+            const response = await fetch(`${API_URL}/user/${user.id}/repositories?github_token=${githubToken}`);
             const data = await response.json();
             setRepositories(data.repositories || []);
         } catch (error) {
@@ -39,7 +40,7 @@ const RepositoryList = ({ onAnalysisComplete }) => {
             console.log('Analyzing repository:', repo.full_name, 'for user:', user.id);
 
             // Try enhanced analysis first, fallback to standard
-            let response = await fetch('http://localhost:8000/analyze-enhanced', {
+            let response = await fetch(`${API_URL}/analyze-enhanced`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -52,7 +53,7 @@ const RepositoryList = ({ onAnalysisComplete }) => {
             // If enhanced fails, use standard analysis
             if (!response.ok && response.status === 503) {
                 console.log('Enhanced analysis not available, using standard analysis');
-                response = await fetch('http://localhost:8000/analyze-github-url', {
+                response = await fetch(`${API_URL}/analyze-github-url`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
