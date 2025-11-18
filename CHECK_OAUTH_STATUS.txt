@@ -1,0 +1,73 @@
+╔═══════════════════════════════════════════════════════════╗
+║           CHECK OAUTH STATUS                              ║
+╚═══════════════════════════════════════════════════════════╝
+
+PASTE THIS IN BROWSER CONSOLE (F12):
+
+───────────────────────────────────────────────────────────
+
+(function() {
+    console.log('🔍 OAuth Status Check\n');
+    
+    // Check auth
+    const auth = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+    const isAuth = auth.state?.isAuthenticated;
+    const user = auth.state?.user?.login;
+    
+    console.log('isAuthenticated:', isAuth);
+    console.log('user:', user || 'none');
+    console.log('Expected view:', isAuth ? '📊 DASHBOARD' : '🏠 CLASSIC VIEW');
+    console.log('');
+    
+    // Check session
+    const processing = sessionStorage.getItem('oauth_processing');
+    if (processing) {
+        console.log('⚠️ WARNING: oauth_processing flag is STUCK');
+        console.log('Run: sessionStorage.clear()');
+    }
+    
+    // Recommendation
+    console.log('\n📋 RECOMMENDATION:');
+    if (!isAuth) {
+        console.log('❌ Not authenticated');
+        console.log('→ Clear storage and login again:');
+        console.log('  localStorage.clear(); sessionStorage.clear(); location.reload();');
+    } else {
+        console.log('✅ Authenticated as:', user);
+        console.log('→ If not seeing dashboard, reload:');
+        console.log('  location.reload(true);');
+    }
+})();
+
+───────────────────────────────────────────────────────────
+
+QUICK FIXES:
+
+1. Clear and Start Fresh:
+   localStorage.clear(); sessionStorage.clear(); location.reload();
+
+2. Just Reload:
+   location.reload(true);
+
+3. Clear Session Only:
+   sessionStorage.clear(); location.reload();
+
+───────────────────────────────────────────────────────────
+
+WHAT TO EXPECT AFTER LOGIN:
+
+✅ Toast: "Successfully logged in! Redirecting..."
+✅ Page reloads after ~500ms
+✅ Dashboard appears (NOT classic view)
+✅ User profile visible in header
+
+───────────────────────────────────────────────────────────
+
+IF STILL NOT WORKING:
+
+1. Check backend is running: http://localhost:8000
+2. Check console for errors (F12)
+3. Check Network tab for failed requests
+4. See TROUBLESHOOT_OAUTH.md for detailed help
+
+╚═══════════════════════════════════════════════════════════╝
