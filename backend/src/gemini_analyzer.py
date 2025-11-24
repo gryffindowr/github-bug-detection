@@ -2,6 +2,7 @@
 Gemini AI Integration for Deep Code Analysis
 """
 import os
+import time
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -49,13 +50,14 @@ class GeminiAnalyzer:
         print(f"🔄 Switching to backup API key #{self.current_key_index + 1}")
         return self._initialize_model()
     
-    def _make_request_with_fallback(self, prompt: str, max_retries: int = None):
-        """Make a request with automatic fallback to backup keys"""
+    def _make_request_with_fallback(self, prompt: str, max_retries: int = None, timeout_retries: int = 3):
+        """Make a request with automatic fallback to backup keys and timeout handling"""
         if max_retries is None:
             max_retries = len(self.api_keys)
         
         attempts = 0
         last_error = None
+        timeout_attempt = 0
         
         while attempts < max_retries:
             try:
@@ -63,7 +65,21 @@ class GeminiAnalyzer:
                     if not self._initialize_model():
                         raise Exception("Failed to initialize model")
                 
-                response = self.model.generate_content(prompt)
+                # Configure request with timeout settings
+                generation_config = {
+                    'temperature': 0.7,
+                    'top_p': 0.8,
+                    'top_k': 40,
+                    'max_output_tokens': 4096,
+                }
+                
+                # Add timeout handling with longer timeout
+                print(f"🔄 Attempting request with API key #{self.current_key_index + 1} (timeout attempt {timeout_attempt + 1}/{timeout_retries})")
+                response = self.model.generate_content(
+                    prompt,
+                    generation_config=generation_config,
+                    request_options={'timeout': 180}  # 180 second timeout (3 minutes)
+                )
                 print(f"✅ Request successful with API key #{self.current_key_index + 1}")
                 return response
             
@@ -71,9 +87,32 @@ class GeminiAnalyzer:
                 last_error = e
                 error_msg = str(e).lower()
                 
+                # Check if it's a timeout error (504)
+                if 'timeout' in error_msg or '504' in error_msg or 'timed out' in error_msg:
+                    timeout_attempt += 1
+                    print(f"⏱️ Timeout error (attempt {timeout_attempt}/{timeout_retries}): {e}")
+                    
+                    if timeout_attempt < timeout_retries:
+                        # Wait before retrying (exponential backoff)
+                        wait_time = 2 ** timeout_attempt
+                        print(f"⏳ Waiting {wait_time}s before retry...")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        # Try next API key after timeout retries exhausted
+                        print(f"❌ Timeout retries exhausted for key #{self.current_key_index + 1}")
+                        timeout_attempt = 0  # Reset for next key
+                        
+                        if not self._switch_to_next_key():
+                            raise Exception(f"All API keys exhausted due to timeouts. Last error: {e}")
+                        
+                        attempts += 1
+                        continue
+                
                 # Check if it's a quota/rate limit error
-                if 'quota' in error_msg or 'rate limit' in error_msg or '429' in error_msg or 'resource_exhausted' in error_msg:
+                elif 'quota' in error_msg or 'rate limit' in error_msg or '429' in error_msg or 'resource_exhausted' in error_msg:
                     print(f"⚠️ API key #{self.current_key_index + 1} quota exceeded: {e}")
+                    timeout_attempt = 0  # Reset timeout counter
                     
                     # Try next key
                     if not self._switch_to_next_key():
@@ -82,8 +121,8 @@ class GeminiAnalyzer:
                     attempts += 1
                     continue
                 else:
-                    # Non-quota error, don't retry
-                    print(f"❌ Non-quota error with key #{self.current_key_index + 1}: {e}")
+                    # Non-quota, non-timeout error - don't retry
+                    print(f"❌ Non-recoverable error with key #{self.current_key_index + 1}: {e}")
                     raise e
         
         raise Exception(f"Failed after {attempts} attempts with {len(self.api_keys)} API keys. Last error: {last_error}")
@@ -181,53 +220,40 @@ Be specific and actionable. Format as valid JSON."""
     
     def analyze_ml_results(self, ml_data: dict) -> dict:
         """Analyze ML prediction results and provide AI-powered insights"""
-        prompt = f"""You are an expert software security analyst and code quality expert. Analyze these ML-based bug prediction results and provide an extremely detailed, comprehensive analysis.
+        # Optimize prompt to reduce processing time and avoid timeouts
+        prompt = f"""Analyze these bug prediction results and provide a concise JSON analysis.
 
 Repository: {ml_data['repository']}
-Overall Risk Score: {ml_data['overall_risk'] * 100:.1f}%
-Total Files Analyzed: {ml_data['total_files']}
-High Risk Files: {len(ml_data['high_risk_files'])}
-Medium Risk Files: {len(ml_data['medium_risk_files'])}
+Risk Score: {ml_data['overall_risk'] * 100:.1f}%
+Files: {ml_data['total_files']} total, {len(ml_data['high_risk_files'])} high-risk
 
-Top Risky Files:
-{self._format_modules(ml_data['modules'])}
+Top 5 Risky Files:
+{self._format_modules(ml_data['modules'][:5])}
 
-Provide a comprehensive JSON analysis with:
+Return valid JSON with:
+{{
+  "overall_risk": {int(ml_data['overall_risk'] * 100)},
+  "files_analyzed": {ml_data['total_files']},
+  "summary": "200-300 word analysis covering: security posture, risk explanation, critical vulnerabilities, code quality issues, and improvement strategy",
+  "critical_concerns": ["5-7 critical issues with descriptions"],
+  "recommendations": ["8-10 specific actionable recommendations"],
+  "files": [
+    {{
+      "filename": "file.ext",
+      "risk_score": 85,
+      "vulnerabilities": ["security issues"],
+      "bugs": ["potential bugs"],
+      "code_smells": ["quality issues"],
+      "suggestions": ["fixes"],
+      "explanation": "brief risk description"
+    }}
+  ]
+}}
 
-1. overall_risk: 0-100 (based on the ML results)
-
-2. files_analyzed: number of files
-
-3. summary: Write a DETAILED 400+ word comprehensive analysis covering:
-   - Overall security posture and code quality assessment
-   - Detailed explanation of the risk score and what it means
-   - Analysis of the codebase structure and patterns observed
-   - Specific security vulnerabilities and their potential impact
-   - Code quality issues and technical debt indicators
-   - Comparison to industry best practices
-   - Long-term maintenance and scalability concerns
-   - Specific areas that need immediate attention
-   - Positive aspects of the codebase (if any)
-   - Overall recommendations for improvement strategy
-   Make this summary comprehensive, detailed, and actionable. Use professional security analysis language.
-
-4. critical_concerns: array of 5-10 most critical issues found with detailed descriptions
-
-5. recommendations: array of 8-12 specific, actionable, step-by-step recommendations with implementation details
-
-6. files: array of detailed analysis for each high-risk file with:
-   - filename
-   - risk_score: 0-100
-   - vulnerabilities: specific security issues with CVE references if applicable
-   - bugs: potential bugs with detailed explanations
-   - code_smells: code quality issues with refactoring suggestions
-   - suggestions: detailed step-by-step fix instructions
-   - explanation: comprehensive description of risks and issues
-
-Be extremely detailed, specific, and actionable. Focus on security, quality, and maintainability. Provide professional-grade analysis."""
+Be specific and actionable. Focus on security and quality. Keep response under 3000 tokens."""
 
         try:
-            response = self._make_request_with_fallback(prompt)
+            response = self._make_request_with_fallback(prompt, timeout_retries=5)
             result = self._parse_response(response.text)
             
             # Ensure we have the right structure
@@ -301,5 +327,7 @@ Be extremely detailed, specific, and actionable. Focus on security, quality, and
             files.append(analysis)
         
         return files
+    
+
     
 
