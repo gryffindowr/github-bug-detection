@@ -1,10 +1,23 @@
 @echo off
-echo Restarting Backend Server...
+echo ========================================
+echo Restarting Backend Server
+echo ========================================
 echo.
-echo Press Ctrl+C in the backend terminal window to stop it
-echo Then run this command:
+
+echo Stopping any running backend processes...
+taskkill /F /IM python.exe /FI "WINDOWTITLE eq *uvicorn*" 2>nul
+timeout /t 2 /nobreak >nul
+
 echo.
-echo cd backend\src
-echo python api.py
+echo Starting backend server...
+cd backend
+start "Backend Server" cmd /k "python -m uvicorn src.api:app --reload --host 0.0.0.0 --port 8000"
+
 echo.
+echo ========================================
+echo Backend server restarted!
+echo ========================================
+echo.
+echo The server is running in a new window.
+echo Close this window or press any key to exit.
 pause

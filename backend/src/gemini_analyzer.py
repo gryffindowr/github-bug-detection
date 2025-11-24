@@ -77,8 +77,7 @@ class GeminiAnalyzer:
                 print(f"🔄 Attempting request with API key #{self.current_key_index + 1} (timeout attempt {timeout_attempt + 1}/{timeout_retries})")
                 response = self.model.generate_content(
                     prompt,
-                    generation_config=generation_config,
-                    request_options={'timeout': 180}  # 180 second timeout (3 minutes)
+                    generation_config=generation_config
                 )
                 print(f"✅ Request successful with API key #{self.current_key_index + 1}")
                 return response
